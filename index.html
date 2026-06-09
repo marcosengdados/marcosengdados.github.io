@@ -56,8 +56,9 @@ nav::after{content:'';position:absolute;bottom:0;left:3.5rem;right:3.5rem;height
 .hero-role{font-size:.72rem;color:var(--verde);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem;}
 .hero-kpis{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
 .kpi{background:rgba(34,201,122,.06);border:1px solid var(--border);border-radius:.75rem;padding:.8rem;}
-.kpi-n{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--verde);line-height:1;}
-.kpi-l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:.2rem;}
+.kpi-n{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--verde);line-height:1;display:inline;}
+.kpi-suffix{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--verde);}
+.kpi-l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:.3rem;}
 
 /* SCROLL */
 .scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;color:var(--muted);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;z-index:1;animation:fadeup 3s ease infinite;}
@@ -201,9 +202,20 @@ footer{padding:1.8rem 3.5rem;border-top:1px solid var(--border);display:flex;jus
   .eyb.active{background:var(--verde-dim);border-color:var(--verde);}
   footer{flex-direction:column;gap:1rem;text-align:center;}
 }
+.scroll-progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--verde),var(--azul));z-index:200;width:0%;transition:width .08s linear;}
+.proj-card{position:relative;overflow:hidden;}
+.proj-card::after{content:'';position:absolute;inset:0;border-radius:14px;background:radial-gradient(400px circle at 50% 0%,rgba(34,201,122,.07),transparent 70%);opacity:0;transition:opacity .4s;pointer-events:none;}
+.proj-card:hover::after{opacity:1;}
+.back-top{position:fixed;bottom:2rem;right:2rem;width:42px;height:42px;background:rgba(34,201,122,.12);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--verde);text-decoration:none;font-size:1rem;z-index:50;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;}
+.back-top.show{opacity:1;transform:translateY(0);pointer-events:all;}
+.back-top:hover{background:rgba(34,201,122,.28);}
+.nav-links a.nav-active{color:var(--verde);}
+.nav-links a.nav-active::after{width:100%;}
 </style>
 </head>
 <body>
+<div class="scroll-progress" id="scroll-progress"></div>
+<a href="#inicio" class="back-top" id="back-top">↑</a>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursor-ring"></div>
 <canvas id="bg-canvas"></canvas>
@@ -247,10 +259,10 @@ footer{padding:1.8rem 3.5rem;border-top:1px solid var(--border);display:flex;jus
     <div class="hero-name">Marcos Vinicius Lima</div>
     <div class="hero-role">Eng. Ambiental · Data Analyst · São Paulo — SP</div>
     <div class="hero-kpis">
-      <div class="kpi"><div class="kpi-n" data-target="10">0</div><div class="kpi-l">Mapas QGIS</div></div>
-      <div class="kpi"><div class="kpi-n" data-target="5">0</div><div class="kpi-l">Automações Python</div></div>
-      <div class="kpi"><div class="kpi-n" data-target="3">0</div><div class="kpi-l">Empreendimentos</div></div>
-      <div class="kpi"><div class="kpi-n" data-target="35">0</div><div class="kpi-l">Repos GitHub</div></div>
+      <div class="kpi"><div class="kpi-n" data-target="10">0</div><span class="kpi-suffix">+</span><div class="kpi-l">Mapas QGIS</div></div>
+      <div class="kpi"><div class="kpi-n" data-target="5">0</div><span class="kpi-suffix">+</span><div class="kpi-l">Automações Python</div></div>
+      <div class="kpi"><div class="kpi-n" data-target="3">0</div><span class="kpi-suffix"></span><div class="kpi-l">Empreendimentos</div></div>
+      <div class="kpi"><div class="kpi-n" data-target="35">0</div><span class="kpi-suffix">+</span><div class="kpi-l">Repos GitHub</div></div>
     </div>
   </div>
   <div class="scroll-hint"><div class="scroll-line"></div><span>scroll</span></div>
@@ -580,32 +592,69 @@ loop();
 const obs=new IntersectionObserver(entries=>entries.forEach((e,i)=>{if(e.isIntersecting){e.target.style.transitionDelay=(i*.06)+'s';e.target.classList.add('visible');}}),{threshold:.08});
 document.querySelectorAll('.reveal').forEach(r=>obs.observe(r));
 
-// COUNTERS
+// COUNTERS — corrigido NaN
 function animCount(el,target,dur=1800){
+  if(isNaN(target)||target===undefined)return;
+  el.dataset.animated='1';
   let start=null;
-  (function step(ts){if(!start)start=ts;const p=Math.min((ts-start)/dur,1),ease=1-Math.pow(1-p,4);el.textContent=Math.round(ease*target);if(p<1)requestAnimationFrame(step);})();
+  (function step(ts){
+    if(!start)start=ts;
+    const p=Math.min((ts-start)/dur,1),ease=1-Math.pow(1-p,4);
+    el.textContent=Math.round(ease*target);
+    if(p<1)requestAnimationFrame(step);
+  })();
 }
-new IntersectionObserver(entries=>{
-  entries.forEach(e=>{if(e.isIntersecting){document.querySelectorAll('.kpi-n[data-target]').forEach(el=>animCount(el,+el.dataset.target));}});
-},{threshold:.5}).observe(document.querySelector('.hero-kpis')||document.body);
-
-// RINGS
-new IntersectionObserver(entries=>{
+const counterObs=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
     if(e.isIntersecting){
-      document.querySelectorAll('.ring-fill[data-pct]').forEach(r=>{
-        const p=+r.dataset.pct,c=238.8,off=c*(1-p/100);
-        setTimeout(()=>{r.style.strokeDashoffset=off;},300);
+      document.querySelectorAll('.kpi-n[data-target]').forEach(el=>{
+        if(el.dataset.animated)return;
+        const t=parseInt(el.dataset.target,10);
+        if(!isNaN(t))animCount(el,t);
       });
     }
   });
-},{threshold:.3}).observe(document.querySelector('#habilidades')||document.body);
+},{threshold:.4});
+const kpiTarget=document.querySelector('.hero-kpis');
+if(kpiTarget)counterObs.observe(kpiTarget);
+
+// RINGS — corrigido NaN
+let ringsAnimated=false;
+new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting&&!ringsAnimated){
+      ringsAnimated=true;
+      document.querySelectorAll('.ring-fill[data-pct]').forEach((r,i)=>{
+        const pct=parseInt(r.dataset.pct,10);
+        if(isNaN(pct))return;
+        const circumference=238.8,off=circumference*(1-pct/100);
+        setTimeout(()=>{r.style.strokeDashoffset=off;},200+i*80);
+      });
+    }
+  });
+},{threshold:.25}).observe(document.querySelector('#habilidades')||document.body);
 
 // EXP TABS
 function showExp(i){
   document.querySelectorAll('.exp-pane').forEach((p,j)=>p.classList.toggle('active',j===i));
   document.querySelectorAll('.eyb').forEach((b,j)=>b.classList.toggle('active',j===i));
 }
+
+// SCROLL PROGRESS BAR
+const progressBar=document.getElementById('scroll-progress');
+const backTop=document.getElementById('back-top');
+window.addEventListener('scroll',()=>{
+  const scrolled=window.scrollY,total=document.body.scrollHeight-window.innerHeight;
+  if(progressBar)progressBar.style.width=(scrolled/total*100)+'%';
+  if(backTop)backTop.classList.toggle('show',scrolled>400);
+  // NAV ATIVA
+  const sections=document.querySelectorAll('section[id]');
+  let current='';
+  sections.forEach(s=>{if(window.scrollY>=s.offsetTop-120)current=s.id;});
+  document.querySelectorAll('.nav-links a').forEach(a=>{
+    a.classList.toggle('nav-active',a.getAttribute('href')==='#'+current);
+  });
+},{passive:true});
 </script>
 </body>
 </html>
